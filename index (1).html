@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Long Walk - Juego de Roblox</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Courier+Prime:wght@400;700&display=swap');
+
+    :root {
+      --forest-dark: #1a2e0f;
+      --forest-mid: #2d4a1a;
+      --forest-light: #3d6622;
+      --moss: #5a7f35;
+      --leaf: #7aad3f;
+      --grass: #a8c84d;
+      --earth: #6b4c2a;
+      --stone: #8a8a72;
+      --sky: #7ab8d4;
+      --fog: #c8d8b0;
+      --cream: #f0ead0;
+      --gold: #c8a832;
+      --rust: #8b4513;
+      --snow: #e8f0e0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--forest-dark);
+      color: var(--cream);
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      cursor: crosshair;
+      overflow-x: hidden;
+    }
+
+    /* ====== SCANLINE OVERLAY ====== */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ====== STARS/NOISE BG ====== */
+    .bg-layer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background:
+        radial-gradient(ellipse at 50% 100%, #2d4a1a 0%, #1a2e0f 60%, #0a1205 100%);
+      z-index: -2;
+    }
+
+    /* ====== MOUNTAIN SILHOUETTE (CSS) ====== */
+    .mountain-bg {
+      position: fixed;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: 45vh;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .mountain-bg svg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      bottom: 0;
+    }
+
+    /* ====== WRAPPER ====== */
+    .page-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ====== OUTER BORDER (retro window) ====== */
+    .outer-border {
+      border: 3px solid var(--moss);
+      box-shadow:
+        0 0 0 1px var(--forest-dark),
+        0 0 0 4px var(--leaf),
+        0 0 0 5px var(--forest-dark),
+        0 0 30px rgba(90,127,53,0.4),
+        inset 0 0 30px rgba(0,0,0,0.5);
+      background: rgba(10, 18, 5, 0.88);
+      padding: 3px;
+      margin-top: 20px;
+    }
+
+    .inner-frame {
+      border: 1px dashed var(--forest-mid);
+      padding: 20px;
+    }
+
+    /* ====== MARQUEE TOP ====== */
+    .marquee-bar {
+      background: var(--forest-mid);
+      border: 2px solid var(--leaf);
+      border-bottom: none;
+      padding: 4px 0;
+      overflow: hidden;
+      font-family: 'VT323', monospace;
+      font-size: 16px;
+      color: var(--grass);
+      white-space: nowrap;
+    }
+
+    .marquee-inner {
+      display: inline-block;
+      animation: marquee 25s linear infinite;
+    }
+
+    @keyframes marquee {
+      0%   { transform: translateX(100vw); }
+      100% { transform: translateX(-200%); }
+    }
+
+    /* ====== HEADER ====== */
+    .site-header {
+      text-align: center;
+      padding: 30px 10px 20px;
+      border-bottom: 2px solid var(--forest-mid);
+      position: relative;
+    }
+
+    .header-eyebrow {
+      font-family: 'VT323', monospace;
+      font-size: 14px;
+      color: var(--moss);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .game-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(22px, 5vw, 42px);
+      color: var(--leaf);
+      text-shadow:
+        3px 3px 0 var(--forest-dark),
+        0 0 20px rgba(122,173,63,0.6),
+        0 0 40px rgba(122,173,63,0.3);
+      line-height: 1.4;
+      letter-spacing: 2px;
+      animation: titlePulse 4s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { text-shadow: 3px 3px 0 #0a1205, 0 0 20px rgba(122,173,63,0.6), 0 0 40px rgba(122,173,63,0.3); }
+      50%       { text-shadow: 3px 3px 0 #0a1205, 0 0 30px rgba(168,200,77,0.9), 0 0 60px rgba(122,173,63,0.5); }
+    }
+
+    .subtitle {
+      font-family: 'VT323', monospace;
+      font-size: 22px;
+      color: var(--stone);
+      margin-top: 10px;
+      letter-spacing: 3px;
+    }
+
+    .roblox-badge {
+      display: inline-block;
+      background: var(--earth);
+      border: 2px solid var(--rust);
+      color: var(--cream);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      padding: 4px 10px;
+      margin-top: 12px;
+      letter-spacing: 2px;
+    }
+
+    /* ====== PIXEL DIVIDER ====== */
+    .pixel-divider {
+      height: 8px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--forest-mid) 0px,
+        var(--forest-mid) 8px,
+        var(--moss) 8px,
+        var(--moss) 16px
+      );
+      margin: 18px 0;
+    }
+
+    /* ====== COMING SOON SECTION ====== */
+    .coming-soon-section {
+      text-align: center;
+      padding: 30px 10px;
+    }
+
+    .coming-soon-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(10px, 2.5vw, 16px);
+      color: var(--gold);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      border: 2px solid var(--gold);
+      display: inline-block;
+      padding: 10px 24px;
+      animation: blinkBorder 1.2s step-start infinite;
+      box-shadow: 0 0 12px rgba(200,168,50,0.5), inset 0 0 12px rgba(200,168,50,0.1);
+    }
+
+    @keyframes blinkBorder {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .countdown-text {
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      color: var(--fog);
+      margin-top: 14px;
+      letter-spacing: 2px;
+    }
+
+    /* ====== TWO-COL INFO ====== */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    @media (max-width: 540px) {
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    .info-box {
+      border: 2px solid var(--forest-light);
+      padding: 14px;
+      background: rgba(26, 46, 15, 0.6);
+      position: relative;
+    }
+
+    .info-box::before {
+      content: attr(data-title);
+      position: absolute;
+      top: -10px; left: 10px;
+      background: var(--forest-dark);
+      padding: 0 6px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: var(--leaf);
+      letter-spacing: 1px;
+    }
+
+    .info-box p {
+      font-family: 'VT323', monospace;
+      font-size: 19px;
+      color: var(--fog);
+      line-height: 1.5;
+    }
+
+    .info-box ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .info-box ul li::before {
+      content: '► ';
+      color: var(--leaf);
+    }
+
+    .info-box ul li {
+      font-family: 'VT323', monospace;
+      font-size: 19px;
+      color: var(--fog);
+      margin-bottom: 4px;
+    }
+
+    /* ====== ASCII ART SECTION ====== */
+    .ascii-section {
+      text-align: center;
+      padding: 14px 0;
+    }
+
+    .ascii-art {
+      font-family: 'Courier Prime', monospace;
+      font-size: clamp(8px, 1.6vw, 13px);
+      color: var(--moss);
+      white-space: pre;
+      display: inline-block;
+      line-height: 1.2;
+      text-shadow: 0 0 8px rgba(90,127,53,0.5);
+    }
+
+    /* ====== STATS BAR (retro HP/progress) ====== */
+    .stats-bar-section {
+      padding: 14px 0;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .stat-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      color: var(--stone);
+      width: 80px;
+      flex-shrink: 0;
+      letter-spacing: 1px;
+    }
+
+    .stat-bar {
+      flex: 1;
+      height: 14px;
+      background: var(--forest-dark);
+      border: 1px solid var(--forest-mid);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--forest-light), var(--leaf));
+      position: relative;
+      animation: fillBar 2s ease-out forwards;
+    }
+
+    .stat-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 50%;
+      background: rgba(255,255,255,0.1);
+    }
+
+    @keyframes fillBar {
+      from { width: 0%; }
+    }
+
+    .stat-fill.w90  { width: 90%; }
+    .stat-fill.w75  { width: 75%; }
+    .stat-fill.w85  { width: 85%; }
+    .stat-fill.w60  { width: 60%; animation-delay: 0.3s; }
+
+    .stat-val {
+      font-family: 'VT323', monospace;
+      font-size: 16px;
+      color: var(--grass);
+      width: 40px;
+      text-align: right;
+    }
+
+    /* ====== SCREENSHOTS PLACEHOLDER ====== */
+    .screens-section {
+      margin: 10px 0;
+    }
+
+    .screens-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: var(--leaf);
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .screens-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .screen-placeholder {
+      aspect-ratio: 4/3;
+      background: var(--forest-mid);
+      border: 2px solid var(--forest-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-placeholder::before {
+      content: '?';
+      font-family: 'Press Start 2P', monospace;
+      font-size: 28px;
+      color: var(--moss);
+    }
+
+    .screen-placeholder::after {
+      content: 'CLASSIFIED';
+      position: absolute;
+      bottom: 6px;
+      font-family: 'VT323', monospace;
+      font-size: 13px;
+      color: var(--rust);
+      letter-spacing: 3px;
+    }
+
+    .screen-placeholder span {
+      font-family: 'VT323', monospace;
+      font-size: 13px;
+      color: var(--stone);
+      position: absolute;
+      top: 6px; left: 6px;
+    }
+
+    /* ====== VISITOR COUNTER ====== */
+    .visitor-counter {
+      text-align: center;
+      margin: 16px 0;
+    }
+
+    .visitor-counter img {
+      image-rendering: pixelated;
+    }
+
+    .counter-box {
+      display: inline-block;
+      background: #000;
+      border: 2px inset var(--stone);
+      padding: 6px 18px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 18px;
+      color: #00ff41;
+      letter-spacing: 6px;
+      text-shadow: 0 0 8px #00ff41;
+      box-shadow: inset 0 0 10px rgba(0,255,65,0.2);
+    }
+
+    .counter-label {
+      font-family: 'VT323', monospace;
+      font-size: 15px;
+      color: var(--stone);
+      display: block;
+      margin-top: 5px;
+      letter-spacing: 3px;
+    }
+
+    /* ====== SIGN UP / NOTIFY ====== */
+    .notify-section {
+      text-align: center;
+      border: 2px solid var(--moss);
+      padding: 20px;
+      background: rgba(26,46,15,0.5);
+      margin: 16px 0;
+    }
+
+    .notify-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      color: var(--gold);
+      margin-bottom: 14px;
+      letter-spacing: 2px;
+    }
+
+    .notify-form {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .notify-input {
+      background: var(--forest-dark);
+      border: 2px inset var(--stone);
+      color: var(--cream);
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      padding: 6px 12px;
+      outline: none;
+      width: 220px;
+    }
+
+    .notify-input:focus {
+      border-color: var(--leaf);
+      box-shadow: 0 0 8px rgba(122,173,63,0.5);
+    }
+
+    .notify-btn {
+      background: var(--forest-light);
+      border: 2px outset var(--leaf);
+      color: var(--cream);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: none;
+    }
+
+    .notify-btn:hover {
+      background: var(--leaf);
+      color: var(--forest-dark);
+    }
+
+    .notify-btn:active {
+      border-style: inset;
+    }
+
+    /* ====== FOOTER ====== */
+    .site-footer {
+      text-align: center;
+      padding: 16px;
+      border-top: 2px dashed var(--forest-mid);
+      margin-top: 10px;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .footer-links a {
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      color: var(--moss);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .footer-links a:hover {
+      color: var(--leaf);
+    }
+
+    .footer-copy {
+      font-family: 'VT323', monospace;
+      font-size: 14px;
+      color: var(--forest-light);
+      letter-spacing: 2px;
+    }
+
+    /* ====== SMALL DECORATIONS ====== */
+    .pixel-tree {
+      display: inline-block;
+      font-size: 22px;
+      animation: treeSway 3s ease-in-out infinite;
+    }
+
+    @keyframes treeSway {
+      0%, 100% { transform: rotate(-2deg); }
+      50%       { transform: rotate(2deg); }
+    }
+
+    .walking-sprite {
+      font-size: 24px;
+      display: inline-block;
+      animation: walk 0.5s steps(2) infinite;
+    }
+
+    @keyframes walk {
+      0%   { transform: translateY(0); }
+      50%  { transform: translateY(-3px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* snow particles */
+    .particles {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: rgba(232,240,224,0.5);
+      animation: fall linear infinite;
+    }
+
+    @keyframes fall {
+      0%   { transform: translateY(-10px) translateX(0); opacity: 0.7; }
+      100% { transform: translateY(100vh) translateX(20px); opacity: 0; }
+    }
+
+    .hit-counter-gif {
+      display: inline-block;
+      background: #000;
+      border: 1px solid #444;
+      padding: 2px 8px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px;
+      color: #ff0;
+    }
+
+    /* LOADING PROGRESS BAR */
+    .loading-bar-wrapper {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BG -->
+  <div class="bg-layer"></div>
+
+  <!-- SNOW PARTICLES -->
+  <div class="particles" id="particles"></div>
+
+  <!-- MOUNTAIN SVG BG -->
+  <div class="mountain-bg">
+    <svg viewBox="0 0 1400 400" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+      <!-- far mountains -->
+      <polygon points="0,400 200,120 400,300 600,80 800,250 1000,100 1200,220 1400,60 1400,400" fill="#1a2e0f" opacity="0.7"/>
+      <!-- mid mountains -->
+      <polygon points="0,400 100,200 300,350 500,150 700,320 900,160 1100,300 1300,130 1400,200 1400,400" fill="#2d4a1a" opacity="0.85"/>
+      <!-- snow caps -->
+      <polygon points="500,150 540,110 580,150" fill="#c8d8b0" opacity="0.6"/>
+      <polygon points="600,80 640,40 680,80" fill="#e8f0e0" opacity="0.7"/>
+      <polygon points="1000,100 1040,55 1080,100" fill="#e8f0e0" opacity="0.6"/>
+      <!-- near treeline -->
+      <rect x="0" y="340" width="1400" height="60" fill="#1a2e0f"/>
+      <!-- pixel trees silhouette -->
+      <g fill="#3d6622" opacity="0.9">
+        <polygon points="30,340 50,300 70,340"/>
+        <polygon points="50,340 70,310 90,340"/>
+        <polygon points="120,340 145,290 170,340"/>
+        <polygon points="200,340 220,308 240,340"/>
+        <polygon points="260,340 285,295 310,340"/>
+        <polygon points="340,340 360,305 380,340"/>
+        <polygon points="410,340 435,288 460,340"/>
+        <polygon points="500,340 520,300 540,340"/>
+        <polygon points="570,340 595,292 620,340"/>
+        <polygon points="660,340 680,302 700,340"/>
+        <polygon points="740,340 760,295 780,340"/>
+        <polygon points="820,340 845,285 870,340"/>
+        <polygon points="920,340 940,300 960,340"/>
+        <polygon points="1000,340 1025,288 1050,340"/>
+        <polygon points="1100,340 1120,298 1140,340"/>
+        <polygon points="1180,340 1205,290 1230,340"/>
+        <polygon points="1280,340 1300,303 1320,340"/>
+        <polygon points="1360,340 1380,308 1400,340"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- MARQUEE -->
+  <div class="marquee-bar">
+    <span class="marquee-inner">
+      🌲 A LONG WALK — MUY PRONTO EN ROBLOX 🏔️ &nbsp;&nbsp;&nbsp; SOBREVIVE LA MONTAÑA &nbsp;&nbsp;&nbsp; CADA PASO CUENTA &nbsp;&nbsp;&nbsp; ¿PUEDES LLEGAR A LA CIMA? 🌲 &nbsp;&nbsp;&nbsp; INSPIRADO EN DEAD RAILS &nbsp;&nbsp;&nbsp; SIN VÍAS, SOLO TUS PIES 🥾 &nbsp;&nbsp;&nbsp; A LONG WALK — MUY PRONTO EN ROBLOX 🏔️ &nbsp;&nbsp;&nbsp; SOBREVIVE LA MONTAÑA &nbsp;&nbsp;&nbsp;
+    </span>
+  </div>
+
+  <div class="page-wrapper">
+    <div class="outer-border">
+      <div class="inner-frame">
+
+        <!-- HEADER -->
+        <div class="site-header">
+          <div class="header-eyebrow">[ EXPERIENCIA ORIGINAL DE ROBLOX ]</div>
+          <div class="game-title">A LONG<br>WALK</div>
+          <div class="subtitle">
+            <span class="pixel-tree">🌲</span>
+            Sin vías. Solo montañas.
+            <span class="pixel-tree">🌲</span>
+          </div>
+          <div>
+            <span class="roblox-badge">▶ JUEGO DE ROBLOX</span>
+          </div>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- COMING SOON -->
+        <div class="coming-soon-section">
+          <div class="coming-soon-label">★ MUY PRONTO ★</div>
+          <div class="countdown-text">
+            <span class="walking-sprite">🥾</span>
+            &nbsp; El camino aún no ha comenzado... &nbsp;
+            <span class="walking-sprite">🥾</span>
+          </div>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- ASCII ART -->
+        <div class="ascii-section">
+          <pre class="ascii-art">
+        /\          *
+       /  \       /\  *
+      / /\ \    /    \
+     / /  \ \  / /\   \
+    / /____\ \/ /  \___\
+   /_/      \__/  ~ ~ ~ ~</pre>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- INFO GRID -->
+        <div class="info-grid">
+          <div class="info-box" data-title="SOBRE EL JUEGO">
+            <p>
+              Inspirado en Dead Rails — pero aquí no hay trenes. Solo tus botas, el aire frío de la montaña y kilómetros de terreno peligroso por delante.<br><br>
+              Camina. Sobrevive. Llega a la cima.
+            </p>
+          </div>
+          <div class="info-box" data-title="CARACTERÍSTICAS">
+            <ul>
+              <li>Caminos procedurales</li>
+              <li>Sistema de clima dinámico</li>
+              <li>Mecánicas de supervivencia</li>
+              <li>Multijugador cooperativo</li>
+              <li>Ciclo día / noche</li>
+              <li>Secretos ocultos</li>
+            </ul>
+          </div>
+          <div class="info-box" data-title="TIPO DE JUEGO">
+            <p>
+              Supervivencia — Mundo Abierto<br><br>
+              👤 1–8 jugadores<br>
+              ⏱️ Sesiones largas<br>
+              🏔️ Entorno de montaña<br>
+              🌡️ Condiciones extremas
+            </p>
+          </div>
+          <div class="info-box" data-title="ESTADO">
+            <p>
+              🔴 EN DESARROLLO<br><br>
+              El juego aún está siendo<br>
+              construido. ¡Déjanos tu<br>
+              usuario para ser avisado!<br><br>
+              🔧 Build: v0.0.1
+            </p>
+          </div>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- HYPE STATS -->
+        <div class="stats-bar-section">
+          <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--leaf);letter-spacing:2px;margin-bottom:14px;">
+            MEDIDOR DE HYPE
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">HYPE</div>
+            <div class="stat-bar"><div class="stat-fill w90"></div></div>
+            <div class="stat-val">90%</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">TERRENO</div>
+            <div class="stat-bar"><div class="stat-fill w85"></div></div>
+            <div class="stat-val">85%</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">CLIMA</div>
+            <div class="stat-bar"><div class="stat-fill w75"></div></div>
+            <div class="stat-val">75%</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">HISTORIA</div>
+            <div class="stat-bar"><div class="stat-fill w60"></div></div>
+            <div class="stat-val">60%</div>
+          </div>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- SCREENSHOTS PLACEHOLDER -->
+        <div class="screens-section">
+          <div class="screens-title">// CAPTURAS [ BLOQUEADAS ]</div>
+          <div class="screens-grid">
+            <div class="screen-placeholder"><span>SCR-01</span></div>
+            <div class="screen-placeholder"><span>SCR-02</span></div>
+            <div class="screen-placeholder"><span>SCR-03</span></div>
+          </div>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- VISITOR COUNTER -->
+        <div class="visitor-counter">
+          <div class="counter-box" id="visitorCount">002847</div>
+          <span class="counter-label">AVENTUREROS HAN VISITADO ESTA PÁGINA</span>
+        </div>
+
+        <div class="pixel-divider"></div>
+
+        <!-- NOTIFY -->
+        <div class="notify-section">
+          <div class="notify-title">AVÍSAME CUANDO SALGA</div>
+          <div class="notify-form">
+            <input class="notify-input" type="text" placeholder="tu usuario de roblox..." id="notifyInput" />
+            <button class="notify-btn" onclick="handleNotify()">AVISARME</button>
+          </div>
+          <div id="notifyMsg" style="font-family:'VT323',monospace;font-size:18px;color:var(--leaf);margin-top:10px;min-height:22px;"></div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="site-footer">
+          <div class="footer-links">
+            <a onclick="alert('Página de Roblox: próximamente')">🎮 Página Roblox</a>
+            <a onclick="alert('Twitter/X: próximamente')">🐦 Twitter/X</a>
+            <a onclick="alert('Grupo de Roblox: próximamente')">👥 Grupo</a>
+          </div>
+          <div style="margin-bottom:8px;">
+            <span class="hit-counter-gif">ERES EL VISITANTE #<span id="footerCount">002847</span></span>
+          </div>
+          <div class="footer-copy">
+            &copy; 2025 A LONG WALK STUDIOS &nbsp;|&nbsp; TODOS LOS DERECHOS RESERVADOS<br>
+            HECHO CON ♥ PARA ROBLOX &nbsp;|&nbsp; MEJOR EN 800x600
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== SNOW PARTICLES ======
+    const particlesEl = document.getElementById('particles');
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (4 + Math.random() * 8) + 's';
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      p.style.opacity = 0.2 + Math.random() * 0.5;
+      particlesEl.appendChild(p);
+    }
+
+    // ====== VISITOR COUNTER (fake animated) ======
+    let base = 2847;
+    function formatCount(n) {
+      return String(n).padStart(6, '0');
+    }
+    // Animate on load
+    let current = 2000;
+    const target = 2847;
+    const counterEl = document.getElementById('visitorCount');
+    const footerEl = document.getElementById('footerCount');
+    const interval = setInterval(() => {
+      current += Math.floor(Math.random() * 30) + 10;
+      if (current >= target) {
+        current = target;
+        clearInterval(interval);
+      }
+      counterEl.textContent = formatCount(current);
+      footerEl.textContent = formatCount(current);
+    }, 60);
+
+    // ====== NOTIFY ======
+    const messages = [
+      "✓ ¡Estás en la lista, aventurero!",
+      "✓ ¡Nos vemos en la cima!",
+      "✓ La montaña te espera...",
+      "✓ No olvides las botas.",
+      "✓ ¡Registrado! Abrígate bien.",
+    ];
+
+    function handleNotify() {
+      const val = document.getElementById('notifyInput').value.trim();
+      const msg = document.getElementById('notifyMsg');
+      if (!val) {
+        msg.style.color = 'var(--rust)';
+        msg.textContent = '✗ ¡Escribe tu usuario de Roblox primero!';
+        return;
+      }
+      msg.style.color = 'var(--leaf)';
+      msg.textContent = messages[Math.floor(Math.random() * messages.length)] + ' [' + val + ']';
+      document.getElementById('notifyInput').value = '';
+      // bump counter
+      base++;
+      counterEl.textContent = formatCount(base);
+      footerEl.textContent = formatCount(base);
+    }
+
+    document.getElementById('notifyInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleNotify();
+    });
+  </script>
+</body>
+</html>
